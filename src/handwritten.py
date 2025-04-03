@@ -22,7 +22,7 @@ logger.addHandler(ch)
 # Константы
 SEPARATOR = "=" * 40
 MODEL = "gpt-4o-mini"
-PMODEL = "gpt-4o-2024-11-20"
+PMODEL = "gpt-4.5-preview-2025-02-27"
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -70,7 +70,7 @@ class PageResult(BaseModel):
 
 # Запуск основного асинхронного кода
 async def main():
-    pdf_path = "raw/коррект рукопись мамы 5-24.pdf"
+    pdf_path = "raw/коррект рукопись мамы 5-24-removed-removed.pdf"
     images = convert_doc_to_images(pdf_path)
 
     img_uris = []
