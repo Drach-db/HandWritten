@@ -28,14 +28,15 @@ def convert_doc_to_images(pdf_path: str) -> List[Image.Image]:
 def load_and_preprocess_image(image: Image.Image) -> List[Image.Image]:
     width, height = image.size
     segment_height = int(height / 2)
-    overlap = int(segment_height * 0.15)
+    overlap = int(segment_height * 0.07)  # Перекрытие уменьшено до 7%
 
     segments = [
         image.crop((0, 0, width, segment_height + overlap)),
         image.crop((0, segment_height - overlap, width, height))
     ]
-    logger.debug(f"Изображение нарезано на 2 фрагмента (размер страницы: {width}x{height})")
+    logger.debug(f"Изображение нарезано на 2 фрагмента с уменьшенным перекрытием (размер страницы: {width}x{height})")
     return segments
+
 
 # -----------------------------
 # Нарезка на 6 фрагментов (этап 3, верификация)
