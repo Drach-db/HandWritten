@@ -1,5 +1,6 @@
 import os
 import base64
+import shutil
 import logging
 from io import BytesIO
 from typing import List
@@ -28,15 +29,14 @@ def convert_doc_to_images(pdf_path: str) -> List[Image.Image]:
 def load_and_preprocess_image(image: Image.Image) -> List[Image.Image]:
     width, height = image.size
     segment_height = int(height / 2)
-    overlap = int(segment_height * 0.07)  # Перекрытие уменьшено до 7%
+    overlap = int(segment_height * 0.15)
 
     segments = [
         image.crop((0, 0, width, segment_height + overlap)),
         image.crop((0, segment_height - overlap, width, height))
     ]
-    logger.debug(f"Изображение нарезано на 2 фрагмента с уменьшенным перекрытием (размер страницы: {width}x{height})")
+    logger.debug(f"Изображение нарезано на 2 фрагмента (размер страницы: {width}x{height})")
     return segments
-
 
 # -----------------------------
 # Нарезка на 6 фрагментов (этап 3, верификация)
@@ -87,6 +87,14 @@ def save_fragments_to_disk(
     return saved_paths
 
 # -----------------------------
+# Очистка директории
+# -----------------------------
+def clear_directory(directory: str) -> None:
+    if Path(directory).exists():
+        shutil.rmtree(directory)
+        logger.info(f"Очистили директорию: {directory}")
+
+# -----------------------------
 # Пример использования (если нужно выполнить отдельно)
 # -----------------------------
 if __name__ == "__main__":
@@ -99,6 +107,9 @@ if __name__ == "__main__":
     if not Path(pdf_path).exists():
         logger.error(f"Файл не найден: {pdf_path}")
         exit(1)
+
+    clear_directory(stage1_dir)
+    clear_directory(stage3_dir)
 
     pages = convert_doc_to_images(pdf_path)
 
