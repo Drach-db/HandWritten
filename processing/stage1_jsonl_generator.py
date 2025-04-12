@@ -14,8 +14,8 @@ CHUNK_PROMPT = """
 
 Ответ строго в формате JSON:
 {
-    "text": "полный распознанный текст фрагмента (учитывая рукописные правки)",
-    "chunk_number": номер фрагмента (целое число)
+    \"text\": \"полный распознанный текст фрагмента (учитывая рукописные правки)\",
+    \"chunk_number\": номер фрагмента (целое число)
 }
 
 Извлекай весь текст и все правки. Не добавляй ничего лишнего.
@@ -30,8 +30,8 @@ def generate_stage1_jsonl(
     """
     Генерирует JSONL-файл с запросами для Batch API OpenAI.
 
-    Для каждого JPG-фрагмента генерируются 3 запроса с уникальными custom_id,
-    чтобы получить 3 версии распознавания текста. Используется response_format.
+    Для каждого JPG-фрагмента генерируются 2 запроса с уникальными custom_id,
+    чтобы получить 2 версии распознавания текста. Используется response_format.
 
     Args:
         fragments_dir (str | Path): Директория с JPG-фрагментами.
@@ -57,46 +57,46 @@ def generate_stage1_jsonl(
                 with Image.open(file_path) as img:
                     data_url = get_img_uri(img)
 
-                for variant in range(1, 4):
+                for variant in range(1, 3):  # теперь только 2 запроса на фрагмент
                     custom_id = f"{base_name}_v{variant}"
                     request_payload = {
-    "custom_id": custom_id,
-    "method": "POST",
-    "url": "/v1/chat/completions",
-    "body": {
-        "model": "gpt-4.5-preview-2025-02-27",  # <-- чётко указана используемая модель
-        "temperature": 0,
-        "top_p": 0.1,
-        "messages": [
-            {"role": "system", "content": CHUNK_PROMPT.strip()},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": data_url}
+                        "custom_id": custom_id,
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": {
+                            "model": model_name,
+                            "temperature": 0,
+                            "top_p": 0.1,
+                            "messages": [
+                                {"role": "system", "content": CHUNK_PROMPT.strip()},
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {
+                                            "type": "image_url",
+                                            "image_url": {"url": data_url}
+                                        }
+                                    ]
+                                }
+                            ],
+                            "response_format": {
+                                "type": "json_schema",
+                                "json_schema": {
+                                    "name": "parse_handwritten",
+                                    "strict": True,
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "text": {"type": "string"},
+                                            "chunk_number": {"type": "integer"}
+                                        },
+                                        "required": ["text", "chunk_number"],
+                                        "additionalProperties": False
+                                    }
+                                }
+                            }
+                        }
                     }
-                ]
-            }
-        ],
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "parse_handwritten",
-                "strict": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "text": {"type": "string"},
-                        "chunk_number": {"type": "integer"}
-                    },
-                    "required": ["text", "chunk_number"],
-                    "additionalProperties": False
-                }
-            }
-        }
-    }
-}
 
                     out_f.write(json.dumps(request_payload, ensure_ascii=False) + "\n")
                     total_requests += 1
